@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Socket.io</title>
+    <link rel="stylesheet" href="main.css">
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+
+    <form class="name">
+        <input type="text" class="chat__message" id="name" placeholder="Write your username">
+        <input type="text" class="chat__message" id="room" placeholder="Room name">
+        <button type="submit" class="chat__button">Send</button>
+    </form>
+
+
+    <div class="chat">
+
+        <h1 class="chat__title">Awesome Chat</h1>
+
+        <span class="chat__status"></span>
+        <ul class="chat__messages">
+        </ul>
+        <form class="chat__form">
+            <input type="text" class="chat__message" placeholder="Write a message..." value="" onkeypress="typing()">
+            <button type="submit" class="chat__button">Send</button>
+        </form>
+
+    </div>
+
+
+
+    <script>
+        let socket;
+        const chat = document.querySelector(".chat");
+        const box = document.querySelector(".chat__messages");
+        const status = document.querySelector(".chat__status");
+        const input = document.querySelector(".chat form > .chat__message");
+        const form = document.querySelector(".chat__form");
+        const formName = document.querySelector(".name");
+        const name = document.querySelector("#name");
+        const room = document.querySelector("#room");
+
+        let username;
+        let roomname;
+
+        function addMessage(message, who = false) {
+            const li = document.createElement("li");
+
+            if (who) li.classList.add("end");
+            li.innerHTML = message;
+            box.appendChild(li);
+            li.scrollIntoView()
+        }
+
+        function sendMessage(e) {
+            e.preventDefault();
+            if (input.value === "") return
+            socket.emit("sendMessage", input.value)
+            addMessage(input.value, true)
+            input.value = ""
+        }
+
+        function typing() {
+            socket.emit('typing')
+        }
+
+        function init() {
+            socket = io("http://localhost:3000")
+            form.addEventListener("submit", sendMessage)
+
+            socket.on("incomingMessage", addMessage)
+            socket.on("userDisconnected", addMessage)
+            socket.on("userConnected", addMessage)
+            socket.on("connect", () => {
+                socket.emit("newUser", username, roomname)
+            })
+            socket.on("isTyping", data => {
+                status.innerHTML = data
+            });
+        }
+
+        formName.addEventListener("submit", (e) => {
+            e.preventDefault();
+            if (name.value === "") return;
+
+            username = name.value;
+            roomname = room.value;
+            formName.style.display = "none";
+            chat.style.display = "block grid";
+            init()
+        })
+    </script>
+
+</body>
+
+</html>
